@@ -1,0 +1,107 @@
+﻿@page "/clasificaciones/nueva"
+@rendermode InteractiveServer
+@inject NavigationManager _navigator;
+@inject IRepositorioClasificaciones _repositorioClasificaciones;
+
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+        .form-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-container .form-control {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .form-container .form-select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .form-container .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+        }
+
+        .form-container .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .form-container .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .form-container .btn + .btn {
+            margin-left: 10px;
+        }
+</style>
+
+<div class="form-container">
+    <h2>Nueva Clasificación</h2>
+    <EditForm Model="_nuevaClasificacion" OnValidSubmit="InsertarClasificacion">
+        <DataAnnotationsValidator />
+        <div class="row mb-3">
+            <label for="txtNombreClasificacion" class="col-2 col-form-label">Nombre</label>
+            <div class="col-10">
+                <InputText id="txtNombreClasificacion" class="form-control" @bind-Value="_nuevaClasificacion.Nombre" />
+                <ValidationMessage For="()=>_nuevaClasificacion.Nombre" />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button class="btn btn-danger ms-3" @onclick="Cancelar" @onclick:preventDefault>Cancelar</button>
+    </EditForm>
+</div>
+
+@code {
+    private Clasificacion _nuevaClasificacion = new Clasificacion();
+
+    private async Task InsertarClasificacion()
+    {
+        var resultado = await _repositorioClasificaciones.InsertarClasificacion(_nuevaClasificacion);
+        if (resultado)
+        {
+            _navigator.NavigateTo("/clasificaciones");
+        }
+        else
+        {
+            // Manejar el error
+        }
+    }
+
+    private void Cancelar()
+    {
+        _navigator.NavigateTo("/clasificaciones");
+    }
+
+
+    public class Clasificacion
+    {
+        public string Nombre { get; set; }
+        public string Descripcion { get; set; }
+    }
+
+    public interface IRepositorioClasificaciones
+    {
+        Task<bool> InsertarClasificacion(Clasificacion clasificacion);
+    }
+}

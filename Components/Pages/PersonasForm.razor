@@ -1,0 +1,187 @@
+﻿@page "/personas/nueva"
+@page "/personas/editar/{Id:int}"
+@rendermode InteractiveServer
+@inject NavigationManager _navigator;
+@inject IRepositorioPersonas _repositorio;
+
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-container h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .form-container .form-control {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .form-container .form-select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .form-container .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+    }
+
+    .form-container .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .form-container .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .form-container .btn + .btn {
+        margin-left: 10px;
+    }
+</style>
+
+<div class="form-container">
+    <h2>@_mensaje Usuario</h2>
+    <EditForm Model="_persona" FormName="frmPersona" OnValidSubmit="Guardar">
+        <DataAnnotationsValidator />
+        <div class="row mb-3">
+            <label for="txtNombre" class="col-2 col-form-label">Nombre</label>
+            <div class="col-10">
+                <InputText id="txtNombre" class="form-control" @bind-Value="_persona.Nombre" />
+                <ValidationMessage For="()=>_persona.Nombre" />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="txtCorreo" class="col-2 col-form-label">Correo</label>
+            <div class="col-10">
+                <InputText id="txtCorreo" class="form-control" @bind-Value="_persona.Correo" />
+                <ValidationMessage For="()=>_persona.Correo" />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="txtTelefono" class="col-2 col-form-label">Teléfono</label>
+            <div class="col-10">
+                <InputText id="txtTelefono" class="form-control" @bind-Value="_persona.Telefono" />
+                <ValidationMessage For="()=>_persona.Telefono" />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="txtnumerocuenta" class="col-2 col-form-label">Numero de cuenta</label>
+            <div class="col-10">
+                <InputText id="txtnumerocuenta" class="form-control" @bind-Value="_persona.numerocuenta" />
+                <ValidationMessage For="()=>_persona.numerocuenta" />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="txtClasificacion" class="col-2 col-form-label">Edad</label>
+            <div class="col-10">
+                <InputSelect class="form-select" @bind-Value="_persona.ClasificacionId">
+                    <option value="0" disabled="disabled">Seleccione edad...</option>
+                    @foreach (Clasificacion clasificacion in _clasificaciones)
+                    {
+                        <option value="@clasificacion.Id">@clasificacion.Nombre</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="()=>_persona.ClasificacionId" />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="txtHabitos" class="col-2 col-form-label">Peliculas</label>
+            <div class="col-10">
+                <InputSelect class="form-select" @bind-Value="_habitosSeleccionados" multiple size="3">
+                    @foreach (Habito habito in _habitos)
+                    {
+                        <option value="@habito.Id">@habito.Nombre</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button class="btn btn-danger ms-3" @onclick="Cancelar" @onclick:preventDefault>Cancelar</button>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    private string _mensaje = "";
+    private Persona? _persona = new();
+    private List<Clasificacion> _clasificaciones = new();
+    private List<Habito> _habitos = new();
+    private int[] _habitosSeleccionados = new int[] { };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        _clasificaciones = await _repositorio.GetClasificaciones();
+        _habitos = await _repositorio.GetHabitos();
+
+
+
+        if (Id > 0)
+        {
+            _persona = await _repositorio.Get(Id);
+            if (_persona.Habitos.Count != 0)
+            {
+                _habitosSeleccionados = _persona.Habitos.Select(i => i.Id).ToArray();
+
+            }
+            _mensaje = "Modificar";
+        }
+        else
+        {
+            _mensaje = "Nuevo";
+        }
+    }
+
+    private async void Guardar()
+    {
+
+        if(_habitosSeleccionados.Count() > 0)
+        {
+            List<Habito> habitos = new();
+            foreach (int idHabito in _habitosSeleccionados)
+            {
+                habitos.Add(_habitos.First(r => r.Id == idHabito));
+            }
+            _persona.Habitos = habitos;
+        }
+        else
+        {
+            _persona.Habitos = null;
+        }
+
+
+        if (Id > 0)
+        {
+            await _repositorio.Update(Id, _persona!);
+        }
+        else
+        {
+            await _repositorio.Add(_persona!);
+        }
+        Cancelar();
+    }
+
+    private void Cancelar()
+    {
+        _navigator.NavigateTo("/personas");
+    }
+}
